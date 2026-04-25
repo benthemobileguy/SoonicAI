@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Soonic AI - Chord Detection Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .upload-section {
+            border: 2px dashed #ccc;
+            padding: 40px;
+            text-align: center;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .btn {
+            background: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .btn:hover {
+            background: #0056b3;
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .status {
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .status.processing {
+            background: #fff3cd;
+            color: #856404;
+            display: block;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            display: block;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            display: block;
+        }
+
+        .warning {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            color: #856404;
+        }
+
+        .results {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .key-info {
+            background: #e7f3ff;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+
+        .key-info h3 {
+            margin-bottom: 5px;
+        }
+
+        .chord-list {
+            margin-top: 20px;
+        }
+
+        .chord-item {
+            padding: 12px;
+            border-left: 4px solid #007bff;
+            background: #f8f9fa;
+            margin-bottom: 10px;
+        }
+
+        .chord-item .time {
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        .chord-item .chord {
+            font-size: 18px;
+            margin: 0 10px;
+        }
+
+        .chord-item .confidence {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .confidence.high { color: #28a745; }
+        .confidence.medium { color: #ffc107; }
+        .confidence.low { color: #dc3545; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎹 Soonic AI - Chord Detection Test</h1>
+        <p class="subtitle">Upload a piano video/audio and see the detected chords</p>
+
+        <div class="warning">
+            ⏱️ <strong>Processing may take 1-2 minutes.</strong> Please be patient while we analyze your file.
+        </div>
+
+        <div class="upload-section">
+            <p style="margin-bottom: 15px;">Select a video or audio file</p>
+            <input type="file" id="fileInput" accept="video/*,audio/*">
+            <button class="btn" onclick="document.getElementById('fileInput').click()">
+                Choose File
+            </button>
+            <p id="fileName" style="margin-top: 10px; color: #666;"></p>
+        </div>
+
+        <button id="uploadBtn" class="btn" style="width: 100%;" disabled>
+            Analyze Chords
+        </button>
+
+        <div id="status" class="status"></div>
+
+        <div id="results" class="results">
+            <h2>Results</h2>
+
+            <div class="key-info">
+                <h3>Detected Key</h3>
+                <p id="detectedKey" style="font-size: 20px;"></p>
+                <p id="handStats" style="font-size: 14px; color: #666; margin-top: 10px;"></p>
+            </div>
+
+            <div class="chord-list">
+                <h3>🎹 Left Hand - Chords (<span id="chordCount"></span> chords)</h3>
+                <div id="chordItems"></div>
+            </div>
+
+            <div class="chord-list" style="margin-top: 30px;">
+                <h3>🎵 Right Hand - Melody/Solo</h3>
+                <div id="melodyItems"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000';
+        let selectedFile = null;
+
+        // File selection
+        document.getElementById('fileInput').addEventListener('change', (e) => {
+            selectedFile = e.target.files[0];
+            if (selectedFile) {
+                document.getElementById('fileName').textContent = selectedFile.name;
+                document.getElementById('uploadBtn').disabled = false;
+            }
+        });
+
+        // Upload and analyze
+        document.getElementById('uploadBtn').addEventListener('click', async () => {
+            if (!selectedFile) return;
+
+            const uploadBtn = document.getElementById('uploadBtn');
+            const statusDiv = document.getElementById('status');
+            const resultsDiv = document.getElementById('results');
+
+            // Reset
+            resultsDiv.style.display = 'none';
+            statusDiv.className = 'status processing';
+            statusDiv.textContent = '⏳ Processing... This may take 1-2 minutes. Please wait.';
+            uploadBtn.disabled = true;
+
+            try {
+                const formData = new FormData();
+                formData.append('file', selectedFile);
+
+                const response = await fetch(`${API_URL}/analyze`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Analysis failed');
+                }
+
+                const data = await response.json();
+
+                // Show success
+                statusDiv.className = 'status success';
+                statusDiv.textContent = '✅ Analysis complete!';
+
+                // Display results
+                displayResults(data);
+
+            } catch (error) {
+                statusDiv.className = 'status error';
+                statusDiv.textContent = `❌ Error: ${error.message}`;
+                uploadBtn.disabled = false;
+            }
+        });
+
+        function displayResults(data) {
+            document.getElementById('detectedKey').textContent = data.detected_key;
+            document.getElementById('chordCount').textContent = data.total_chords;
+
+            // Display hand separation stats
+            if (data.hand_separation) {
+                const stats = `Left hand: ${data.hand_separation.left_hand_notes} notes | Right hand: ${data.hand_separation.right_hand_notes} notes`;
+                document.getElementById('handStats').textContent = stats;
+            }
+
+            // Display left hand chords
+            const chordItemsDiv = document.getElementById('chordItems');
+            chordItemsDiv.innerHTML = '';
+
+            data.chords.forEach(chord => {
+                const chordDiv = document.createElement('div');
+                chordDiv.className = 'chord-item';
+
+                const confidenceClass = chord.confidence >= 0.7 ? 'high' :
+                                       chord.confidence >= 0.5 ? 'medium' : 'low';
+
+                const confidenceLabel = chord.confidence >= 0.7 ? '✓✓✓' :
+                                       chord.confidence >= 0.5 ? '✓✓' : '✓';
+
+                const notes = chord.note_names ? chord.note_names.join(', ') : '';
+
+                chordDiv.innerHTML = `
+                    <span class="time">${Math.floor(chord.time)}s</span>
+                    <span class="chord">${chord.chord}</span>
+                    <span class="confidence ${confidenceClass}">${confidenceLabel} (${Math.round(chord.confidence * 100)}%)</span>
+                    ${notes ? `<br><span style="color: #666; font-size: 14px; margin-left: 45px;">Notes: ${notes}</span>` : ''}
+                `;
+
+                chordItemsDiv.appendChild(chordDiv);
+            });
+
+            // Display right hand melody
+            const melodyItemsDiv = document.getElementById('melodyItems');
+            melodyItemsDiv.innerHTML = '';
+
+            if (data.melody && data.melody.length > 0) {
+                data.melody.forEach(melody => {
+                    const melodyDiv = document.createElement('div');
+                    melodyDiv.className = 'chord-item';
+                    melodyDiv.style.borderLeft = '4px solid #28a745';
+
+                    const notes = melody.note_names ? melody.note_names.join(', ') : '';
+
+                    melodyDiv.innerHTML = `
+                        <span class="time">${Math.floor(melody.time)}s</span>
+                        <span style="margin-left: 10px; color: #666;">Playing: ${notes}</span>
+                    `;
+
+                    melodyItemsDiv.appendChild(melodyDiv);
+                });
+            } else {
+                melodyItemsDiv.innerHTML = '<p style="color: #666;">No right hand melody detected</p>';
+            }
+
+            document.getElementById('results').style.display = 'block';
+            document.getElementById('uploadBtn').disabled = false;
+        }
+    </script>
+</body>
+</html>

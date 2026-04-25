@@ -7,106 +7,418 @@ This document breaks down the first 8 sprints into daily tasks with time estimat
 
 # SPRINT 0: Setup & Planning (Week 1)
 
-## Day 1 (Monday) - Development Environment Setup
-**Goal:** Get local development environment ready
+**🔥 CRITICAL PHILOSOPHY CHANGE:**
 
-### Morning (4 hours)
-- [ ] Install Node.js 20.x LTS from nodejs.org (30 min)
-  - Verify: `node --version` should show v20.x
-  - Verify: `npm --version` should show 10.x
-- [ ] Install Python 3.11+ from python.org (30 min)
-  - Verify: `python3 --version` should show 3.11+
-  - Install pip: `python3 -m ensurepip --upgrade`
-- [ ] Install FFmpeg (1 hour)
-  - macOS: `brew install ffmpeg`
-  - Linux: `sudo apt-get install ffmpeg`
-  - Windows: Download from ffmpeg.org
-  - Verify: `ffmpeg -version`
-- [ ] Install Docker Desktop (1 hour)
-  - Download from docker.com
-  - Install and start Docker
-  - Verify: `docker --version` and `docker-compose --version`
-- [ ] Install Redis locally (30 min)
-  - macOS: `brew install redis`
-  - Linux: `sudo apt-get install redis-server`
-  - Start Redis: `redis-server`
-  - Test: `redis-cli ping` should return PONG
-- [ ] Install VSCode or preferred IDE (30 min)
+**OLD APPROACH (WRONG):**
+Day 1: Install everything (Docker, Redis, AWS, etc.)
+Day 2: Set up cloud infra
+Day 3: Maybe test basic-pitch
 
-### Afternoon (4 hours)
-- [ ] Install VSCode extensions (30 min)
-  - ESLint
-  - Prettier
-  - Python
-  - Docker
-  - GitLens
-  - Tailwind CSS IntelliSense
-- [ ] Set up Git (30 min)
-  - Install Git if not present
-  - Configure: `git config --global user.name "Your Name"`
-  - Configure: `git config --global user.email "your@email.com"`
-  - Generate SSH key if needed
-- [ ] Create GitHub repository (1 hour)
-  - Create new repo: `SoonicAI`
-  - Add README.md
-  - Create .gitignore for Node.js, Python
-  - Clone locally: `git clone git@github.com:yourusername/SoonicAI.git`
-- [ ] Create project structure (1 hour)
-  ```bash
-  cd SoonicAI
-  mkdir frontend backend audio-service docs
-  touch README.md
-  ```
-- [ ] Write initial README.md (1 hour)
-  - Project description
-  - Tech stack
-  - Setup instructions (WIP)
+**NEW APPROACH (CORRECT):**
+Day 1: Install ONLY essentials
+Day 2: VALIDATE basic-pitch (CRITICAL GATE 🚨)
+Day 3: Build simple pipeline
+Days 4-5: Infra (only if validation passed)
 
-**End of Day Checkpoint:**
-✅ All tools installed and verified
-✅ Repository created and cloned
-✅ Project folders created
+**👉 Pipeline FIRST, infra SECOND**
 
 ---
 
-## Day 2 (Tuesday) - Infrastructure Accounts & Configuration
-**Goal:** Set up all cloud services and accounts
+## Day 1 (Monday) - Minimal Local Setup
+**Goal:** Install ONLY what's needed to test basic-pitch
+
+**⚠️ DO NOT install Docker, AWS, Firebase, Stripe today. Too early.**
+
+### Morning (3 hours)
+- [ ] Install Python 3.11+ (30 min)
+  ```bash
+  # macOS
+  brew install python@3.11
+
+  # Verify
+  python3 --version  # Should show 3.11+
+  ```
+
+- [ ] Install FFmpeg (30 min)
+  ```bash
+  # macOS
+  brew install ffmpeg
+
+  # Linux
+  sudo apt-get install ffmpeg
+
+  # Verify
+  ffmpeg -version
+  ```
+
+- [ ] Install basic-pitch (30 min)
+  ```bash
+  pip3 install basic-pitch
+
+  # Verify
+  basic-pitch --help
+  ```
+
+- [ ] Test basic-pitch on ONE SHORT CLIP (1 hour)
+  ```bash
+  # Download a gospel piano video from YouTube
+  # Cut to 30-60 seconds ONLY (faster iteration)
+  ffmpeg -i video.mp4 -t 60 -ss 0 short_clip.wav
+
+  # Run basic-pitch
+  basic-pitch output/ short_clip.wav
+
+  # Check output folder - you'll see MIDI file
+  ```
+
+- [ ] LISTEN to the output (30 min)
+  ```bash
+  # CRITICAL: Don't just look at MIDI data
+  # Load MIDI file into:
+  # - GarageBand / Logic / FL Studio
+  # - OR online MIDI viewer (https://cifkao.github.io/html-midi-player/)
+
+  # Play it and LISTEN
+  # Ask: "Does this sound like the original chord progression?"
+  ```
+
+  **⚠️ IMPORTANT EXPECTATIONS:**
+  - Output will be MESSY (overlapping notes, noise)
+  - NOT clean/perfect MIDI
+  - You're checking: "Can I roughly hear the harmonic structure?"
+  - Your ears won't lie - numbers might
+
+### Afternoon (3 hours)
+- [ ] Set up Git (30 min)
+  ```bash
+  git config --global user.name "Your Name"
+  git config --global user.email "your@email.com"
+  ```
+
+- [ ] Create GitHub repository (30 min)
+  - Create repo: `SoonicAI`
+  - Clone locally
+  - Create simple .gitignore
+
+- [ ] Create minimal project structure (30 min)
+  ```bash
+  mkdir SoonicAI
+  cd SoonicAI
+  mkdir test-scripts docs
+  ```
+
+- [ ] Install VSCode/IDE with Python extension (30 min)
+
+- [ ] Write simple test script (1 hour)
+  ```python
+  # test-scripts/test_basic_pitch.py
+  import basic_pitch
+  # Simple script to load audio and run basic-pitch
+  ```
+
+**End of Day Checkpoint:**
+✅ Python, FFmpeg, basic-pitch installed
+✅ Ran basic-pitch on 1 audio file successfully
+✅ Git repository created
+✅ Ready for validation testing tomorrow
+
+**🚨 If basic-pitch didn't work → debug before Day 2**
+
+---
+
+## Day 2 (Tuesday) - 🔥 VALIDATION DAY (CRITICAL GATE)
+**Goal:** Test basic-pitch accuracy on 5 gospel piano videos
+
+**⚠️ THIS IS THE MOST IMPORTANT DAY OF SPRINT 0**
+**If validation fails, you STOP the project. No exceptions.**
 
 ### Morning (4 hours)
-- [ ] Create Firebase project (1 hour)
-  - Go to console.firebase.google.com
-  - Create new project: "Soonic AI Production"
-  - Enable Google Analytics (optional)
-  - Note down project ID
-- [ ] Configure Firebase services (2 hours)
-  - Enable Authentication
-    - Enable Email/Password provider
-    - Enable Google OAuth provider
-  - Create Firestore database
-    - Start in test mode (will secure later)
-    - Choose region (us-central1 or closest)
-  - Set up Firebase Storage
-    - Create default bucket
-    - Note bucket URL
-  - Download service account key (for backend)
-    - Project Settings → Service Accounts → Generate new private key
-    - Save as `firebase-admin-key.json` (DON'T commit to git)
-- [ ] Get Firebase client config (30 min)
-  - Project Settings → General → Your apps
-  - Add web app
-  - Copy config object (apiKey, authDomain, etc.)
-  - Save to notes for later use
+- [ ] Download 5 SHORT gospel piano clips from YouTube (1 hour)
+  - Find videos with piano only (no vocals)
+  - Different keys, tempos, styles
+  - **CRITICAL: Use 30-60 second clips ONLY**
+  - Save as: `test1.mp4`, `test2.mp4`, etc.
+
+- [ ] Convert to audio (30 min)
+  ```bash
+  for i in {1..5}; do
+    # Cut to first 60 seconds only
+    ffmpeg -i test$i.mp4 -t 60 -ss 0 test$i.wav
+  done
+  ```
+
+- [ ] Run basic-pitch on all 5 (30 min)
+  ```bash
+  for i in {1..5}; do
+    basic-pitch output/test$i/ test$i.wav
+  done
+  ```
+
+- [ ] Load MIDI and LISTEN to each output (30 min)
+  - Use DAW (GarageBand/Logic) or online MIDI player
+  - Play alongside original video
+  - Ask: "Does this capture the harmonic progression?"
+
+- [ ] Manually transcribe first 30-60 seconds of EACH video (2 hours)
+  - Listen carefully
+  - Write down chords you hear
+  - Save as: `test1_manual.txt`, etc.
+  - Format: `0:00 Cmaj7, 0:04 Gmaj9, ...`
 
 ### Afternoon (4 hours)
-- [ ] Create AWS account (1 hour)
-  - Sign up at aws.amazon.com
-  - Set up billing alerts (crucial!)
-  - Enable MFA on root account
-- [ ] Set up AWS IAM user (1 hour)
-  - Create IAM user: "soonic-dev"
-  - Attach policies: S3FullAccess, EC2FullAccess
-  - Generate access key
-  - Save access key ID and secret (securely)
+- [ ] Measure "MUSICAL USEFULNESS" accuracy (3 hours)
+
+  **🎯 CRITICAL: Use This Method (Not Vague Comparison)**
+
+  For each video:
+
+  **Step 1:** Write your expected chords
+  ```
+  Expected: Dmaj7 → Gmaj9 → Em7 → A13
+  ```
+
+  **Step 2:** Extract detected chords from MIDI
+  ```
+  Detected: Dmaj7 → Gmaj7 → Em7 → A7
+  ```
+
+  **Step 3:** Count "musically useful" matches
+  ```
+  Dmaj7 ✅ (exact match)
+  Gmaj9 vs Gmaj7 ✅ (close enough - both G major quality)
+  Em7 ✅ (exact match)
+  A13 vs A7 ✅ (both A dominant - close enough)
+
+  Score: 4/4 = 100% USABLE
+  ```
+
+  **🎯 RULE: We measure MUSICAL USEFULNESS, not exact theory correctness**
+
+  **Count as CORRECT if:**
+  - ✅ Exact match (Cmaj7 = Cmaj7)
+  - ✅ Same root + quality (Gmaj9 = Gmaj7, both G major)
+  - ✅ Same function (A13 = A7, both dominant)
+
+  **Count as WRONG if:**
+  - ❌ Different root (C vs G)
+  - ❌ Different quality (Cmaj vs Cmin)
+  - ❌ Nonsensical (random chord in wrong key)
+
+- [ ] Document results (1 hour)
+  ```
+  Test 1: 85% musically useful (17/20 chords)
+  Test 2: 60% musically useful (12/20 chords)
+  Test 3: 75% musically useful (15/20 chords)
+  Test 4: 65% musically useful (13/20 chords)
+  Test 5: 70% musically useful (14/20 chords)
+
+  AVERAGE: 71% USABLE ✅
+  ```
+
+**End of Day Checkpoint:**
+✅ Tested basic-pitch on 5 videos
+✅ Calculated average accuracy
+
+### 🚨 HARD GATE DECISION:
+
+**If average accuracy ≥ 60%:**
+→ ✅ PROCEED to Day 3
+
+**If average accuracy < 60%:**
+→ ❌ STOP PROJECT or pivot approach
+→ Do NOT continue building
+
+**This gate exists to prevent wasting 3-5 months.**
+
+---
+
+## Day 3 (Wednesday) - Simple Pipeline Test
+**Goal:** Build minimal audio → chord JSON script
+
+**⚠️ ONLY do this if Day 2 validation passed (≥60% accuracy)**
+
+### Morning (4 hours)
+- [ ] Create simple Python script (2 hours)
+  ```python
+  # test-scripts/audio_to_chords.py
+
+  import basic_pitch
+  import librosa
+
+  def extract_chords(audio_file):
+      # 1. Load audio
+      y, sr = librosa.load(audio_file)
+
+      # 2. Run basic-pitch
+      model_output, midi_data, note_events = basic_pitch.inference.predict(audio_file)
+
+      # 3. Convert notes to rough chords (simple logic)
+      chords = convert_notes_to_chords(note_events)
+
+      # 4. Return JSON
+      return {
+          "key": "C",  # placeholder
+          "tempo": 120,  # placeholder
+          "chords": chords
+      }
+  ```
+
+- [ ] Test script on 3 videos (1 hour)
+  - Run on test1.wav, test2.wav, test3.wav
+  - Verify it produces JSON output
+  - Check if output makes some musical sense
+
+- [ ] Document output format (1 hour)
+  ```json
+  {
+    "key": "C major",
+    "tempo": 120,
+    "chords": [
+      {"timestamp": 0.0, "chord": "Cmaj7", "notes": ["C","E","G","B"]},
+      {"timestamp": 2.5, "chord": "Gmaj9", "notes": ["G","B","D","F#","A"]}
+    ]
+  }
+  ```
+
+### Afternoon (3 hours)
+- [ ] Add basic key detection with librosa (2 hours)
+  ```python
+  def detect_key(audio_file):
+      y, sr = librosa.load(audio_file)
+      chroma = librosa.feature.chroma_cqt(y=y, sr=sr)
+      # Simple key detection logic
+      return "C major"
+  ```
+
+- [ ] Test complete pipeline (1 hour)
+  - Run: `python audio_to_chords.py test1.wav`
+  - Output: JSON file with key, tempo, chords
+  - Verify: Output is valid JSON and musically sensible
+
+**End of Day Checkpoint:**
+✅ Simple pipeline working locally
+✅ Can go from audio → chord JSON
+✅ Output format defined
+✅ **PROOF OF CONCEPT CONFIRMED**
+
+---
+
+## Day 4 (Thursday) - Minimal Infrastructure (Only If Pipeline Works)
+**Goal:** Set up ONLY essential infra
+
+**⚠️ ONLY do this if Days 2-3 validation passed**
+
+### Morning (3 hours)
+- [ ] Install Node.js (30 min)
+  ```bash
+  # macOS
+  brew install node@20
+
+  # Verify
+  node --version  # Should show v20.x
+  ```
+
+- [ ] Create GitHub repository structure (1 hour)
+  ```bash
+  cd SoonicAI
+  mkdir frontend backend audio-service
+  git add .
+  git commit -m "Initial structure"
+  git push
+  ```
+
+- [ ] Create Firebase project (1.5 hours)
+  - Go to console.firebase.google.com
+  - Create project: "Soonic AI"
+  - Enable Firestore (test mode)
+  - Note project ID
+  - **SKIP:** Auth, Storage (do later)
+
+### Afternoon (2 hours)
+- [ ] Write SETUP.md (1 hour)
+  - Document what you learned
+  - Document basic-pitch installation
+  - Document test results
+  - Document pipeline script
+
+- [ ] Document validation results (1 hour)
+  - Create: `docs/VALIDATION_RESULTS.md`
+  - Include accuracy numbers
+  - Include sample outputs
+  - Include decision to proceed
+
+**End of Day Checkpoint:**
+✅ Node.js installed
+✅ Firebase project created (minimal)
+✅ Documentation written
+✅ Ready to start Sprint 1
+
+**🚨 DEFER TO LATER SPRINTS:**
+- ❌ Docker (not needed yet)
+- ❌ Redis (not needed yet)
+- ❌ AWS (not needed until Sprint 2)
+- ❌ Stripe (not needed until Sprint 13)
+
+---
+
+## Day 5 (Friday) - Review & Plan Next Sprint
+**Goal:** Consolidate learnings and plan Sprint 1
+
+### Morning (3 hours)
+- [ ] Review all test results (1 hour)
+  - Did basic-pitch meet 60% threshold?
+  - What chord types work best?
+  - What chord types fail?
+  - Any patterns in failures?
+
+- [ ] Create simplified chord strategy (1 hour)
+  ```
+  Based on tests, we will focus on:
+  ✅ Major triads (C, F, G)
+  ✅ Minor triads (Am, Dm, Em)
+  ✅ 7th chords (Cmaj7, G7, Am7)
+  ⚠️ 9th chords (if accuracy good)
+  ❌ 11th, 13th (defer to Phase 2)
+  ```
+
+- [ ] Document "First Working Output" definition (1 hour)
+  - Based on test results
+  - Set realistic targets
+  - Define what "musically sensible" means
+
+### Afternoon (2 hours)
+- [ ] Plan Sprint 1 tasks (1 hour)
+  - Review IMPLEMENTATION_PLAN.md Sprint 1
+  - Adjust based on learnings
+  - Create task checklist
+
+- [ ] Sprint 0 retrospective (1 hour)
+  - What went well?
+  - What was harder than expected?
+  - Do we still believe this is achievable?
+  - Should we continue? (honest assessment)
+
+**End of Day Checkpoint:**
+✅ Validation complete
+✅ Decision made (continue or stop)
+✅ Sprint 1 planned
+✅ Learnings documented
+
+### 🎯 Sprint 0 Success Criteria:
+
+**MUST HAVE:**
+- ✅ basic-pitch accuracy ≥ 60%
+- ✅ Simple pipeline produces valid JSON
+- ✅ Output makes musical sense
+- ✅ Clear decision to continue
+
+**If ANY failed → STOP before Sprint 1**
+
+---
+
+**Sprint 0 Complete! 🎉**
+
+**Next:** Only start Sprint 1 if ALL validation gates passed.
   - Install AWS CLI: `brew install awscli` or download
   - Configure: `aws configure` (enter access key)
 - [ ] Create S3 bucket (1 hour)

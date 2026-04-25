@@ -1,43 +1,88 @@
 # Soonic AI - Complete Implementation Plan
-## From Zero to MVP Launch (16 Weeks)
+## From Zero to MVP Launch (18-20 Weeks)
+
+**⚠️ UPDATED:** Adjusted timeline to 18-20 weeks based on realistic solo developer capacity
 
 ---
 
 ## 📋 Overview
 
-This plan takes Soonic AI from empty repository to production MVP in **4 months (16 weeks)**. Each sprint is 1 week with specific deliverables, dependencies, and success criteria.
+This plan takes Soonic AI from empty repository to production MVP in **4.5-5 months (18-20 weeks)**. Each sprint is 1 week with specific deliverables, dependencies, and success criteria.
 
-**MVP Goal:** Users can upload piano videos, get chord analysis within 3 minutes, view results with virtual keyboard visualization, and pay for the service.
+**🎯 CRITICAL MINDSET SHIFT:**
+- We are NOT building "perfect AI chord detection"
+- We ARE building "a learning accelerator that saves musicians 90 minutes"
+- 70-85% accuracy is ACCEPTABLE and VALUABLE
+
+**MVP Goal:** Users can upload piano videos, get chord analysis within 3 minutes (70-85% accuracy), view results with chord-based virtual keyboard visualization, and pay for the service.
+
+**Key Strategy:** Focus 70% of AI effort on the CORRECTION LAYER, not perfect detection.
 
 ---
 
 ## 🎯 Success Metrics for MVP Launch
 
+**🔥 REALISTIC TARGETS (Based on Research):**
+
 - [ ] Stranger can upload video at soonic.ai without help
 - [ ] Analysis completes within 3 minutes for 5-minute video
-- [ ] Chord timeline is musically correct (8/10 musicians agree)
-- [ ] Virtual keyboard highlights correct keys in real-time
+- [ ] **Chord detection accuracy ≥ 70%** (measured against manual transcription)
+- [ ] **Chord timeline is musically sensible** (8/10 musicians say "I'd use this")
+- [ ] Virtual keyboard highlights correct chord notes in real-time
 - [ ] Users can sign up and pay $12/month via Stripe
-- [ ] At least 10 paying customers
+- [ ] **At least 5-10 paying customers** (realistic for solo SaaS)
 - [ ] 2+ weeks uptime without major outage
+- [ ] **Processing success rate > 90%** (most videos complete without errors)
+
+**Note:** We're targeting "useful" not "perfect". 70-85% accuracy is ENOUGH if output is musically sensible.
 
 ---
 
 # SPRINT 0: Setup & Planning (Week 1)
 
-## Objectives
-Set up development environment, project structure, and infrastructure accounts.
+## 🔥 Objectives
+Set up MINIMAL development environment to build pipeline FIRST, infra SECOND.
 
-## Tasks
+**⚠️ CRITICAL PHILOSOPHY:**
+- ❌ Don't setup all AWS/cloud infra in Week 1
+- ✅ Get basic-pitch working locally FIRST
+- ✅ Validate the core tech works BEFORE cloud setup
+- ✅ Add cloud infra in Week 3-4 (when pipeline is proven)
 
-### Development Environment
+**👉 Build pipeline FIRST, infra SECOND**
+
+## 🎯 Priority Order (DO IN THIS ORDER):
+
+### Day 1-2: Local Dev Environment (HIGH PRIORITY)
 - [ ] Install Node.js 20+ and npm/yarn
 - [ ] Install Python 3.11+
 - [ ] Install FFmpeg for video/audio processing
-- [ ] Install Docker and Docker Compose
-- [ ] Install Redis locally
+- [ ] **Install basic-pitch: `pip install basic-pitch`**
 - [ ] Set up Git repository and GitHub/GitLab
 - [ ] Install VSCode/IDE with ESLint, Prettier, Python extensions
+
+### Day 3: VALIDATE BASIC-PITCH (CRITICAL GATE 🚨)
+- [ ] **Download 5 gospel piano videos from YouTube**
+- [ ] **Run basic-pitch on each video locally**
+- [ ] **Manually transcribe first 30 seconds**
+- [ ] **Calculate accuracy: is it > 60%?**
+- [ ] **🚨 If < 60% accurate → STOP and reassess**
+
+**👉 DO NOT PROCEED until you validate basic-pitch works.**
+
+### Day 4: Simple Pipeline Test (If Day 3 Passes)
+- [ ] Create simple Python script: `audio → basic-pitch → chord JSON`
+- [ ] Test on 3 videos
+- [ ] Verify output makes musical sense
+- [ ] **This proves the concept works**
+
+### Day 5: Minimal Infra (Only If Pipeline Works)
+- [ ] Install Docker and Docker Compose (optional for local dev)
+- [ ] Install Redis locally (defer if not needed yet)
+- [ ] Create Firebase project (or defer to Week 2)
+- [ ] Create project structure folders
+
+**👉 Only setup infra AFTER pipeline is proven.**
 
 ### Project Structure
 ```
@@ -54,25 +99,30 @@ SoonicAI/
 - [ ] Initialize Git repository with .gitignore
 - [ ] Create README.md with project overview
 
-### Infrastructure Accounts
-- [ ] Create Firebase project (Authentication, Firestore, Storage)
-- [ ] Create AWS account and set up IAM user
-- [ ] Create S3 bucket for video/audio storage
-- [ ] Set up AWS EC2 for later deployment (can defer to Sprint 15)
-- [ ] Create Vercel account for frontend hosting
-- [ ] Create Stripe account for payments
-- [ ] Set up monitoring: Sentry account, UptimeRobot
+### Minimal Infrastructure (DEFER MOST TO LATER SPRINTS)
+**👉 Only do these if Day 3-4 validation passed:**
+
+- [ ] Create Firebase project (or defer to Sprint 1)
+- [ ] Create AWS account (or defer to Sprint 2)
+- [ ] Set up Git repository
+- [ ] **DEFER:** Stripe, Sentry, UptimeRobot, EC2 → Week 12+
+
+**Why defer:** Don't pay for services you're not using yet.
 
 ### Documentation
-- [ ] Create SETUP.md with environment setup instructions
-- [ ] Create .env.example files for each service
-- [ ] Document architecture diagram (simple text/mermaid)
+- [ ] Create simple SETUP.md with local dev instructions
+- [ ] Document basic-pitch test results
+- [ ] Note validation outcome (accuracy %)
 
 ## Deliverables
-- ✅ Complete development environment
+- ✅ Local dev environment working
+- ✅ **basic-pitch validated (> 60% accuracy)**
+- ✅ Simple pipeline tested locally
+- ✅ Proof of concept confirmed
 - ✅ Repository structure created
-- ✅ All infrastructure accounts ready
-- ✅ Team can run `git clone` and follow SETUP.md
+
+## 🚨 HARD GATE:
+**If basic-pitch accuracy < 60% → STOP PROJECT or pivot approach.**
 
 ---
 
@@ -260,6 +310,8 @@ audio-service/
 ## Objectives
 Implement pitch detection, chord recognition, key detection, and tempo detection.
 
+**🔥 FOCUS SHIFT:** Aim for "good enough" detection (60-70%), not perfect. Save effort for Sprint 5 correction layer.
+
 ## Tasks
 
 ### Pitch Detection
@@ -315,11 +367,230 @@ Implement pitch detection, chord recognition, key detection, and tempo detection
 - [ ] Compare results with manual analysis
 - [ ] Aim for 70%+ accuracy on MVP dataset
 
+## 🎯 MVP Audio Output Definition (CRITICAL)
+
+**Before proceeding to Sprint 4.5, output MUST meet these criteria:**
+
+### Valid Output Requirements:
+
+1. **Key Detection:** 80%+ accuracy
+   - Test on 10 videos in known keys
+   - If wrong → output is invalid
+
+2. **Chord Progression:** 60%+ correct chords
+   - Compare against manual transcription
+   - If < 60% → do NOT proceed
+
+3. **Stable Segments:** No jittery chord changes
+   - Chords must hold for ≥ 0.5 seconds
+   - No rapid flickering between chords
+
+4. **Musically Sensible:** No random/nonsensical jumps
+   - C → F → G = OK
+   - C → F#dim → Bb → C = NOT OK
+
+### 🚨 HARD GATE:
+
+**If output does NOT meet these criteria:**
+- ✅ STOP and simplify (switch to maj/min/7 only)
+- ❌ DO NOT build frontend on garbage output
+
+### Testing Procedure:
+
+- [ ] Test with 10 gospel piano videos
+- [ ] Manually transcribe first 30 seconds of each
+- [ ] Compare system output vs manual transcription
+- [ ] Calculate accuracy percentage
+- [ ] Check for stability and musical sense
+
+**Only proceed if ALL criteria met.**
+
 ## Deliverables
 - ✅ Complete audio analysis pipeline
-- ✅ Chord detection working with extensions
+- ✅ Chord detection working with extensions (60-70% accuracy acceptable)
 - ✅ Key and tempo detection functional
 - ✅ Initial accuracy baseline established
+- ✅ **Output meets MVP definition above**
+
+**Note:** Raw accuracy may be 60-70%. This is OK - Sprint 4.5 will boost it to 75-85%.
+
+---
+
+# SPRINT 4.5: The Correction Layer - THE REAL PRODUCT (Week 5.5)
+
+## 🔥 Objectives
+**THIS IS THE MOST IMPORTANT SPRINT.**
+
+Implement the music intelligence layer that transforms "messy AI output" into "musically sensible results."
+
+**Goal:** Boost accuracy from 60-70% (raw) → 75-85% (corrected) without improving ML.
+
+## Philosophy
+
+**What we're NOT doing:**
+❌ Training better ML models
+❌ Fine-tuning hyperparameters
+❌ Collecting more training data
+
+**What we ARE doing:**
+✅ Adding musical intelligence
+✅ Applying music theory rules
+✅ Making output make sense
+
+## Tasks
+
+### 1. Key-Aware Chord Prioritization (HIGH PRIORITY)
+
+**Problem:** AI detects exotic chords when diatonic chords more likely.
+
+**Solution:**
+```python
+class KeyAwareCorrector:
+    def __init__(self, key, mode):
+        self.diatonic_chords = self._get_diatonic_chords(key, mode)
+
+    def correct_chord(self, detected_chord, confidence):
+        if confidence < 0.7:
+            # Boost diatonic chords
+            if detected_chord in self.diatonic_chords:
+                confidence += 0.15
+            else:
+                # Find closest diatonic match
+                return self._find_closest_diatonic(detected_chord)
+```
+
+**Tasks:**
+- [ ] Define diatonic chord sets for all major/minor keys
+- [ ] Implement confidence boosting for diatonic chords
+- [ ] Implement "find closest diatonic" fallback
+- [ ] Test with videos in various keys
+
+### 2. Harmonic Progression Smoothing (HIGH PRIORITY)
+
+**Problem:** AI produces random chord jumps that make no musical sense.
+
+**Solution:**
+```python
+COMMON_PROGRESSIONS = {
+    'G7': {'C': 0.9, 'Cmaj7': 0.85},  # V → I very common
+    'Dm7': {'G7': 0.8},  # ii → V common
+    'C': {'F': 0.7, 'Am': 0.7},  # I → IV or I → vi common
+}
+
+def smooth_progression(prev_chord, candidates):
+    for candidate in candidates:
+        if candidate in COMMON_PROGRESSIONS.get(prev_chord, {}):
+            boost = COMMON_PROGRESSIONS[prev_chord][candidate]
+            candidate.confidence += boost
+```
+
+**Tasks:**
+- [ ] Define common progression patterns for gospel/worship
+- [ ] Implement progression probability boosting
+- [ ] Penalize unlikely chord jumps
+- [ ] Test with real gospel progressions
+
+### 3. Voicing Normalization (MEDIUM PRIORITY)
+
+**Problem:** AI detects inversions (C/E, C/G) which confuse learners.
+
+**Solution:**
+```python
+def normalize_voicing(chord_symbol):
+    if '/' in chord_symbol:  # Inversion detected
+        root = chord_symbol.split('/')[0]
+        return root  # C/E → C
+    return chord_symbol
+```
+
+**Tasks:**
+- [ ] Detect inversion notation
+- [ ] Normalize to root position
+- [ ] Preserve important bass notes (optional)
+- [ ] Test with various voicings
+
+### 4. Complexity Simplification (MEDIUM PRIORITY)
+
+**Problem:** AI detects overly complex chords learners don't need.
+
+**Solution:**
+```python
+def simplify_for_learners(chord):
+    # Cmaj7(#11,b9,13) → Cmaj9
+    if has_many_extensions(chord):
+        return simplify_to_basic_ninth(chord)
+    return chord
+```
+
+**Tasks:**
+- [ ] Detect overly complex chords
+- [ ] Simplify to common extensions (7th, 9th max for MVP)
+- [ ] Preserve essential character
+- [ ] Test with jazz/gospel recordings
+
+### 5. Duplicate Removal (LOW PRIORITY)
+
+**Problem:** Same chord detected multiple times in a row.
+
+**Solution:**
+```python
+def remove_duplicates(chords):
+    result = []
+    for chord in chords:
+        if not result or chord.name != result[-1].name:
+            result.append(chord)
+    return result
+```
+
+**Tasks:**
+- [ ] Remove consecutive identical chords
+- [ ] Extend duration of merged chords
+- [ ] Keep important re-articulations (optional)
+
+### Integration
+
+**Combine all corrections:**
+```python
+def apply_all_corrections(raw_chords, key, mode):
+    # 1. Remove duplicates
+    chords = remove_duplicates(raw_chords)
+
+    # 2. Normalize voicings
+    chords = [normalize_voicing(c) for c in chords]
+
+    # 3. Simplify complexity
+    chords = [simplify_for_learners(c) for c in chords]
+
+    # 4. Apply key-aware boosting
+    corrector = KeyAwareCorrector(key, mode)
+    chords = [corrector.correct_chord(c) for c in chords]
+
+    # 5. Smooth progressions
+    chords = smooth_progression_sequence(chords)
+
+    return chords
+```
+
+### Testing
+
+**Critical Tests:**
+- [ ] Before/after comparison on 10 gospel videos
+- [ ] Measure accuracy improvement (target: +10-15%)
+- [ ] Verify output "makes musical sense" (ask 3 musicians)
+- [ ] Check no regressions (simple chords still work)
+
+**Success Criteria:**
+- ✅ Accuracy improves from 60-70% → 75-85%
+- ✅ 8/10 musicians say "output makes sense"
+- ✅ No obviously wrong progressions (like random key jumps)
+
+## Deliverables
+- ✅ Complete correction layer implemented
+- ✅ All 5 correction strategies working
+- ✅ Accuracy boost of +10-15% achieved
+- ✅ Output is musically sensible
+
+**💡 Key Insight:** This sprint may add more value than all the ML work combined.
 
 ---
 
@@ -615,8 +886,22 @@ Build interactive chord timeline visualization.
 
 # SPRINT 9: Virtual Keyboard Visualization - Part 1 (Week 10)
 
-## Objectives
+## 🎹 Objectives
 Build static 88-key piano keyboard visualization.
+
+**🔥 CRITICAL STRATEGY:** We're building **CHORD-BASED** visualization, NOT performance-accurate MIDI playback.
+
+**What we're showing:**
+- Which keys make up each chord (Cmaj7 → highlight C, E, G, B)
+- Synced to video timeline
+
+**What we're NOT showing:**
+- Exact performance timing ❌
+- Velocity dynamics ❌
+- Precise rhythms ❌
+- Exact voicings across octaves ❌
+
+**Why:** Your system outputs `{"chord": "Gmaj9"}`, not precise MIDI events. This is **enough** for the value prop.
 
 ## Tasks
 
@@ -681,28 +966,64 @@ Standard piano layout:
 
 # SPRINT 10: Virtual Keyboard Visualization - Part 2 (Week 11)
 
-## Objectives
+## 🔥 Objectives
 Sync virtual keyboard with video playback and chord analysis.
+
+**THIS IS YOUR "WOW FEATURE" - The thing that makes users pay.**
+
+## Strategy
+
+### Simple Chord → Notes Mapping (Recommended Approach)
+
+**Create a lookup table:**
+```javascript
+const chordToNotes = {
+  // Basic triads
+  "C": ["C4", "E4", "G4"],
+  "Dm": ["D4", "F4", "A4"],
+  "G": ["G3", "B3", "D4"],
+
+  // 7th chords
+  "Cmaj7": ["C4", "E4", "G4", "B4"],
+  "G7": ["G3", "B3", "D4", "F4"],
+  "Am7": ["A3", "C4", "E4", "G4"],
+
+  // Extended chords (simplified to single octave)
+  "Gmaj9": ["G3", "B3", "D4", "F#4", "A4"],
+  "Cmaj11": ["C4", "E4", "G4", "B4", "D5", "F5"],
+
+  // ... add more as needed
+}
+
+// Usage
+const currentChord = "Gmaj9"
+const notesToHighlight = chordToNotes[currentChord]
+// → ["G3", "B3", "D4", "F#4", "A4"]
+```
+
+**Why this approach:**
+- ✅ Simple and fast
+- ✅ Consistent octave placement
+- ✅ Easy to debug
+- ✅ Educational (shows standard voicing)
+- ✅ 100% reliable (no parsing errors)
 
 ## Tasks
 
-### Real-Time Note Sync
-- [ ] Parse chord data to extract note names
-- [ ] Convert note names to MIDI numbers
-- [ ] Map MIDI numbers to keyboard keys
-- [ ] Update activeNotes based on current video time
+### 1. Create Chord → Notes Mapping (HIGH PRIORITY)
 
-### Chord → Notes Conversion
-```javascript
-// Example:
-chord = {timestamp: 2.5, chord: "Cmaj7", notes: ["C4","E4","G4","B4"]}
-// Convert to: activeNotes = ["C4","E4","G4","B4"]
-```
+- [ ] Create `chordToNotes` lookup table for common chords
+- [ ] Include major, minor, 7th, 9th, 11th, 13th variations
+- [ ] Use consistent octave placement (middle C region)
+- [ ] Add fallback for unknown chords (show root + 3rd + 5th)
 
-- [ ] Create utility: `parseNotesFromChord(chord)`
-- [ ] Handle different octave representations
-- [ ] Support chord voicings across multiple octaves
-- [ ] Default to middle octaves if octave not specified
+### 2. Real-Time Note Sync
+
+- [ ] Get current video time from player
+- [ ] Find current chord from analysis data
+- [ ] Look up notes in `chordToNotes` table
+- [ ] Update VirtualKeyboard `activeNotes` prop
+- [ ] Handle missing chords gracefully
 
 ### Playback Integration
 - [ ] Subscribe to video currentTime updates

@@ -7,15 +7,17 @@ This document explains every major technical decision made for Soonic AI, includ
 ## Table of Contents
 
 1. [Overall Architecture](#overall-architecture)
-2. [Frontend Stack](#frontend-stack)
-3. [Backend Stack](#backend-stack)
-4. [Audio AI Service Stack](#audio-ai-service-stack)
-5. [Database & Storage](#database--storage)
-6. [Authentication](#authentication)
-7. [Payment Processing](#payment-processing)
-8. [Infrastructure & Hosting](#infrastructure--hosting)
-9. [Development Tools](#development-tools)
-10. [Third-Party Services](#third-party-services)
+2. [🔥 The Correction Layer - Core Product Strategy](#the-correction-layer---core-product-strategy)
+3. [Frontend Stack](#frontend-stack)
+4. [Backend Stack](#backend-stack)
+5. [Audio AI Service Stack](#audio-ai-service-stack)
+6. [Database & Storage](#database--storage)
+7. [Authentication](#authentication)
+8. [Payment Processing](#payment-processing)
+9. [Infrastructure & Hosting](#infrastructure--hosting)
+10. [Development Tools](#development-tools)
+11. [Third-Party Services](#third-party-services)
+12. [Virtual Keyboard Strategy](#virtual-keyboard-strategy)
 
 ---
 
@@ -63,6 +65,193 @@ This document explains every major technical decision made for Soonic AI, includ
 ❌ More infrastructure to manage
 
 **Verdict:** ✅ Microservices worth it for flexibility and scaling
+
+---
+
+# 🔥 The Correction Layer - Core Product Strategy
+
+## Decision: Focus 80% of AI Effort on Post-Processing, Not Detection
+
+**⚠️ CRITICAL INSIGHT:** This is the most important technical decision in the entire system.
+
+### The Philosophy Shift
+
+**Traditional Approach (WRONG):**
+```
+Spend 90% effort on perfect pitch/chord detection
+Spend 10% effort on output formatting
+```
+
+**Our Approach (CORRECT):**
+```
+Spend 30% effort on "good enough" detection (basic-pitch + chroma)
+Spend 70% effort on intelligent correction layer
+```
+
+### Why This Is The Winning Strategy
+
+**Research shows:**
+- Even state-of-the-art models only achieve 75-85% accuracy on complex chords
+- Users tolerate 70-80% accuracy if output is musically sensible
+- Rule-based corrections often work better than more ML
+
+**Real Example:**
+- Basic-pitch detects: `[C, E, G, Bb, D, F, A]` (noisy, messy)
+- Without correction: System outputs "C13" with 60% confidence
+- With correction layer:
+  1. Check key (C major)
+  2. Simplify to diatonic (Cmaj9 more likely than C13 in this key)
+  3. Check previous chord (if previous was G7, Cmaj9 makes sense - V→I)
+  4. Output: "Cmaj9" with musical context
+
+**Result:** User says "Yes, that's right!" even though raw detection was messy.
+
+### The Correction Layer Components
+
+#### 1. **Key-Aware Chord Prioritization**
+
+**Problem:** AI detects exotic chords when simple diatonic chords more likely.
+
+**Solution:**
+```python
+class KeyAwareCorrector:
+    def __init__(self, key, mode):
+        self.diatonic_chords = self._get_diatonic_chords(key, mode)
+
+    def correct_chord(self, detected_chord, confidence):
+        if confidence < 0.7:
+            # Prefer diatonic chord over exotic one
+            if detected_chord in self.diatonic_chords:
+                return detected_chord, confidence + 0.15  # Boost confidence
+            else:
+                # Find closest diatonic match
+                return self._find_closest_diatonic(detected_chord)
+```
+
+#### 2. **Harmonic Progression Smoothing**
+
+**Problem:** AI might detect random chord jumps that make no musical sense.
+
+**Solution:**
+```python
+class ProgressionSmoother:
+    COMMON_PROGRESSIONS = {
+        'G7': {'C': 0.9, 'Cmaj7': 0.85, 'Am': 0.3},  # V → I is common
+        'Dm7': {'G7': 0.8, 'Em7': 0.4},
+        # etc.
+    }
+
+    def smooth_progression(self, prev_chord, current_candidates):
+        # Boost candidates that follow common progressions
+        for candidate in current_candidates:
+            if prev_chord in self.COMMON_PROGRESSIONS:
+                boost = self.COMMON_PROGRESSIONS[prev_chord].get(candidate, 0)
+                candidate.confidence += boost
+```
+
+#### 3. **Voicing Normalization**
+
+**Problem:** AI detects inversions (C/E, C/G) which confuse learners.
+
+**Solution:**
+```python
+def normalize_voicing(chord_symbol):
+    """Convert inversions to root position for educational clarity"""
+    if '/' in chord_symbol:
+        root = chord_symbol.split('/')[0]
+        return root  # C/E → C
+    return chord_symbol
+```
+
+#### 4. **Complexity Simplification**
+
+**Problem:** AI detects overly complex chords learners don't need.
+
+**Solution:**
+```python
+def simplify_for_learners(chord, user_level='beginner'):
+    if user_level == 'beginner':
+        # Cmaj7(#11,b9,13) → Cmaj7
+        return simplify_to_basic_seventh(chord)
+    elif user_level == 'intermediate':
+        # Cmaj7(#11,b9,13) → Cmaj9
+        return simplify_to_extensions(chord, max_extension=9)
+    else:
+        return chord  # Keep as-is for advanced users
+```
+
+### Implementation Priority
+
+**Sprint 4 (Core AI):**
+- ✅ Basic pitch detection (basic-pitch)
+- ✅ Basic chord detection (template matching)
+- ✅ Key detection (librosa chroma)
+- ✅ Tempo detection (librosa beat tracking)
+
+**Sprint 5 (The REAL Product):**
+- 🔥 Implement correction layer
+- 🔥 Key-aware prioritization
+- 🔥 Progression smoothing
+- 🔥 Voicing normalization
+- 🔥 Complexity simplification
+
+**Why This Order:**
+
+Phase 1: Get "raw" output working (70% accurate, musically messy)
+Phase 2: Make it musically intelligent (80% accurate, musically sensible)
+
+### Measuring Success
+
+**Bad Metric:** "How accurate is the ML model?"
+**Good Metric:** "Do users say the output makes musical sense?"
+
+**Test:**
+- Give 10 worship pianists the same video
+- Show them detected chords
+- Ask: "Would you use this to learn?"
+
+**Target:** 8/10 say "Yes"
+
+### Why This Beats Competitors
+
+**Chordify:** Uses ML, no musical intelligence layer → produces musically nonsensical results
+**Our Approach:** ML + Music Theory → produces musically sensible results
+
+**Example:**
+
+Chordify might output:
+```
+0:00 C
+0:02 F#dim
+0:04 Bb
+0:06 C
+```
+
+We output:
+```
+0:00 C
+0:02 F
+0:04 G7
+0:06 C
+```
+
+Both 75% "accurate" but ours makes musical sense (I-IV-V-I progression).
+
+### Technical Trade-offs
+
+**Pros:**
+✅ Achievable with current team/timeline
+✅ Debuggable (rules, not black box)
+✅ Improvable with user feedback
+✅ Transparent to users
+✅ Differentiator vs competitors
+
+**Cons:**
+❌ Requires music theory knowledge
+❌ May oversimplify some advanced music
+❌ Rules might not cover all edge cases
+
+**Verdict:** ✅ This is the right approach for MVP and beyond
 
 ---
 
@@ -1033,6 +1222,327 @@ This document explains every major technical decision made for Soonic AI, includ
 - Error rate > 5%
 - Response time > 2s
 - CPU > 80% for 10 min
+
+---
+
+# Virtual Keyboard Strategy
+
+## Decision: Chord-Based Visualization (Not Performance-Accurate)
+
+**⚠️ CRITICAL:** This is your "wow feature" - the thing that makes users pay.
+
+### The Two Approaches
+
+#### ❌ Approach 1: Performance-Accurate (Like Synthesia)
+**What it is:**
+- Show exact notes played
+- With exact timing
+- With velocity dynamics
+- With precise rhythms
+- Multiple octave voicings
+
+**Why NOT to do this for MVP:**
+```
+Your system outputs:
+{
+  "time": 2.5,
+  "chord": "Gmaj9"
+}
+
+NOT:
+[
+  {"note": "G4", "start": 2.5, "duration": 0.8, "velocity": 0.7},
+  {"note": "B3", "start": 2.5, "duration": 0.9, "velocity": 0.6},
+  ...
+]
+```
+
+**You're detecting CHORDS, not exact MIDI performance.**
+
+**Complexity:**
+- Requires precise note timing ❌
+- Requires velocity tracking ❌
+- Requires rhythm analysis ❌
+- Requires voicing detection ❌
+
+**Verdict:** Too hard for MVP, not necessary for value prop
+
+#### ✅ Approach 2: Chord-Based Visualization (SIMPLE)
+
+**What it is:**
+- At 0:00 → Dmaj7 detected → highlight D, F#, A, C# on piano
+- At 0:04 → Gmaj9 detected → highlight G, B, D, F#, A on piano
+- Synced to video playback in real-time
+
+**What user sees:**
+- Video playing 🎥
+- Piano keyboard below 🎹
+- Keys lighting up as chords play 🔥
+
+**User reaction:**
+> "Wait... this is actually crazy 😳" — Every user
+
+**Complexity:**
+- Simple chord → notes mapping ✅
+- Timeline synchronization ✅
+- Visual rendering (SVG/Canvas) ✅
+
+**Verdict:** Perfect for MVP, delivers 90% of value with 10% of complexity
+
+### Technical Implementation
+
+#### 1. Chord → Notes Mapping
+
+```javascript
+// Simple lookup table
+const chordToNotes = {
+  // Basic triads
+  "C": ["C4", "E4", "G4"],
+  "Dm": ["D4", "F4", "A4"],
+
+  // 7th chords
+  "Cmaj7": ["C4", "E4", "G4", "B4"],
+  "G7": ["G3", "B3", "D4", "F4"],
+
+  // Extended chords (simplified to single octave)
+  "Gmaj9": ["G3", "B3", "D4", "F#4", "A4"],
+  "Cmaj11": ["C4", "E4", "G4", "B4", "D5", "F5"],
+
+  // ... etc
+}
+
+// Usage
+const currentChord = "Gmaj9"
+const notesToHighlight = chordToNotes[currentChord]
+// → ["G3", "B3", "D4", "F#4", "A4"]
+```
+
+#### 2. Virtual Piano Component
+
+```typescript
+interface VirtualKeyboardProps {
+  activeNotes: string[]  // ["C4", "E4", "G4"]
+  width: number
+  height: number
+}
+
+const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({
+  activeNotes,
+  width,
+  height
+}) => {
+  // Render 88 keys (A0 to C8)
+  // Highlight keys in activeNotes array
+  // Use CSS transitions for smooth highlighting
+}
+```
+
+#### 3. Timeline Synchronization
+
+```typescript
+const ResultsPage = () => {
+  const [currentTime, setCurrentTime] = useState(0)
+  const [analysisData, setAnalysisData] = useState<AnalysisResult>()
+
+  // Update current time from video
+  const handleTimeUpdate = (time: number) => {
+    setCurrentTime(time)
+  }
+
+  // Find current chord based on timestamp
+  const currentChord = useMemo(() => {
+    return analysisData?.chords.find(chord =>
+      chord.timestamp <= currentTime &&
+      (chord.timestamp + chord.duration) > currentTime
+    )
+  }, [currentTime, analysisData])
+
+  // Get notes to highlight
+  const activeNotes = currentChord
+    ? chordToNotes[currentChord.chord]
+    : []
+
+  return (
+    <div>
+      <VideoPlayer onTimeUpdate={handleTimeUpdate} />
+      <VirtualKeyboard activeNotes={activeNotes} />
+    </div>
+  )
+}
+```
+
+#### 4. Visual Design
+
+**Colors:**
+- Default keys: White (white keys), Black (black keys)
+- Active keys: `#3B82F6` (blue with glow effect)
+- Transitions: 200ms ease-in-out
+
+**Layout:**
+```
+┌─────────────────────────────┐
+│  Video Player (60% height)  │
+├─────────────────────────────┤
+│  Virtual Keyboard (40%)     │
+│  [Highlighted keys]         │
+└─────────────────────────────┘
+```
+
+### Why This Strategy Wins
+
+#### 1. Achievable with Current Pipeline
+
+Your output:
+```json
+{
+  "chords": [
+    {"timestamp": 0.0, "chord": "Cmaj7", "notes": ["C","E","G","B"]},
+    {"timestamp": 2.5, "chord": "Gmaj9", "notes": ["G","B","D","F#","A"]}
+  ]
+}
+```
+
+**Everything you need is already there!**
+
+#### 2. Delivers Core Value
+
+**What users want:**
+> "I want to see what keys to press to play this chord"
+
+**Not:**
+> "I want to see the exact performance MIDI"
+
+#### 3. Educational Focus
+
+**Chord-based = Learning tool**
+- Shows chord shapes clearly
+- Easy to practice
+- Focuses on harmony (your value prop)
+
+**Performance-accurate = Reference tool**
+- Shows exact playing
+- Hard to follow
+- Focuses on performance (not your differentiator)
+
+#### 4. Differentiator vs Synthesia
+
+**Synthesia:** Performance visualization (for songs you already know)
+**Soonic:** Chord learning tool (for songs you want to learn)
+
+Different use cases, different approaches.
+
+### Future Enhancements (Phase 2)
+
+**After MVP validation:**
+- [ ] Show chord name above keyboard
+- [ ] Color-code chord types (blue = major, purple = minor)
+- [ ] Show root note highlighted differently
+- [ ] Add "loop this chord" feature
+- [ ] Allow clicking keyboard to hear chord
+- [ ] Show alternative voicings
+
+**Phase 3 (if users request):**
+- [ ] More accurate voicing detection
+- [ ] Multiple octave display
+- [ ] Fingering suggestions
+- [ ] Compare your playing vs original (requires mic input)
+
+### Success Metrics
+
+**MVP Success:**
+- ✅ Users can see which keys make up each chord
+- ✅ Visualization syncs smoothly with video
+- ✅ 60fps animation
+- ✅ Works on desktop browsers
+
+**User Quote We Want:**
+> "This piano visualization is a game-changer. I can finally see what's happening!" — Beta User
+
+### Technical Specifications
+
+**Performance Requirements:**
+- Render 88 keys at 60fps
+- Update highlighting within 100ms of chord change
+- Smooth transitions (200ms CSS)
+
+**Browser Support:**
+- Chrome/Edge (90%+ users)
+- Safari (Mac users)
+- Firefox (nice to have)
+
+**Libraries to Use:**
+- SVG for keyboard rendering (scalable, crisp)
+- React for state management
+- CSS transitions for animations
+- No heavy libraries needed (keep it simple)
+
+### 🚨 Virtual Keyboard Limitation (IMPORTANT - Prevents Scope Creep)
+
+**🔥 EXPLICIT BOUNDARIES:**
+
+### We DO NOT Show:
+- ❌ Exact note timing (millisecond precision)
+- ❌ Velocity dynamics (how hard keys pressed)
+- ❌ Real performance voicing (exact octaves played)
+- ❌ Rhythm patterns (quarter notes, eighth notes)
+- ❌ Pedal usage
+- ❌ Finger positioning
+
+### We ONLY Show:
+- ✅ Chord note composition (which keys make up the chord)
+- ✅ Approximate timing (synced to chord changes)
+- ✅ Standard voicing (middle C region)
+
+### Why This Limitation:
+
+**Our system outputs:**
+```json
+{"timestamp": 2.5, "chord": "Gmaj9", "notes": ["G","B","D","F#","A"]}
+```
+
+**NOT:**
+```json
+[
+  {"note": "G4", "start": 2.500, "end": 3.200, "velocity": 0.73},
+  {"note": "B3", "start": 2.503, "end": 3.198, "velocity": 0.68},
+  ...
+]
+```
+
+**We detect CHORDS, not MIDI events.**
+
+**This is a FEATURE, not a limitation:**
+- ✅ Simpler to implement
+- ✅ Easier for learners to understand
+- ✅ Focuses on harmony (our value prop)
+- ✅ Achievable with current pipeline
+
+### 🛡️ Scope Creep Prevention:
+
+**If anyone (including you) suggests:**
+- "Can we show the exact timing?"
+- "Can we add velocity?"
+- "Can we show the real voicing?"
+
+**Answer:** "Not in MVP. That requires MIDI-level detection which we don't do."
+
+**Redirect to Phase 2 (post-validation).**
+
+---
+
+### Why This Is Your "Wow Feature"
+
+**Without it:**
+User sees text: "Cmaj7 → Gmaj9 → Em7"
+Reaction: "OK... I guess that's helpful?" 😐
+
+**With it:**
+User sees piano keys lighting up in sync with music
+Reaction: "Wait... this is actually crazy!" 😳
+
+**This is what makes them tell their friends.**
+**This is what makes them pay.**
+**This is what makes Soonic different.**
 
 ---
 
